@@ -1,4 +1,4 @@
-package znapi.simplefileiohelper;
+package znapi.fileiohelper;
 
 import java.awt.Font;
 import java.io.File;
@@ -27,32 +27,38 @@ public final class Main extends NanoHTTPD {
 	private JTextArea textArea;
 	private PlainDocument document;
 
-	private static final String usageMsg = "Usage:\n\tjava -jar simple-file-io-helper-app.jar [-gui] /root/directory/\n\to  -gui is an optional argument. It causes the app to run with\n\t    a GUI rather in console mode.";
+	private static final String usageMsg = "Usage:\n\tjava -jar file-io-helper-app.jar [-gui] /root/directory/\n\to  -gui is an optional argument. It causes the app to run with\n\t    a GUI rather in console mode.";
 
 	public static void main(String[] args) {
-		// if running from console
-		if(System.console() != null) { 
-			if(args.length == 0)
+		String rootDir = null;
+		boolean useGui;
+
+		if(args.length > 2) {
+			System.out.println("Invalid arguments. There are too many.\n" + usageMsg);
+		}
+		if(System.console() != null) {
+			useGui = false;
+			if(args.length == 0) {
 				System.out.println("You must specify a root directory.\nExample:\n\tsimple-file-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
-			else if(args.length == 1) {
-				if(args[0].equalsIgnoreCase("-gui"))
-					new Main(null, false);
-				else
-					new Main(args[0], true);
+				return;
 			}
-			else if(args.length == 2) {
-				if(args[0].equalsIgnoreCase("-gui"))
-					new Main(args[1], false);
-				else if(args[1].equalsIgnoreCase("-gui"))
-					new Main(args[0], false);
-				else
-					System.out.println("Invalid argument.\n"+usageMsg);
-			}
-			else
-				System.out.println("Invalid argument. There are too many.\n"+usageMsg);
 		}
 		else
-			new Main(null, false);
+			useGui = true;
+
+		for(String arg : args) {
+			if(arg.equalsIgnoreCase("-gui"))
+				useGui = true;
+			else
+				rootDir = arg;
+		}
+
+		if(System.console() != null && rootDir == null) {
+			System.out.println("You must specify a root directory.\nExample:\n\tsimple-file-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
+			return;
+		}
+
+		new Main(rootDir, !useGui);
 	}
 
 	public void log(String s) {
