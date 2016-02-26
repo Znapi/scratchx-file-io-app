@@ -1,30 +1,7 @@
 # Simple File I/O Helper App for Scratch Extension
-This is a helper app to be used with the [File I/O Scratch Extension](https://github.com/Znapi/scratchx/wiki/File-I-O).
+This is a helper app to be used with the [File I/O Scratch Extension](http://znapi.github.io/scratchx-file-io/).
 
-[**Download**](https://github.com/Znapi/scratchx-file-io/releases/download/v1.2/file-io-helper-app.jar) (Runnable JAR file)
-
-**Safety notice**: It technically is not safe to use this helper app. It allows anything on your computer, Scratch extensions, programs, etc., to gain full access to your file system. However, is unlikely that anything else on your computer will expect that you are running this helper app and exploit it. Nevertheless, be careful. Only use this helper app when you are using Scratch extensions and projects that you trust.
-
-If you want to use a version that allows you to restrict read and write permissions, try [this one](https://github.com/Znapi/scratchx-file-io/releases/download/v1.2/file-io-helper-app.jar) (See description [here](https://github.com/Znapi/scratchx-file-io/releases/v1.2s/)). Every time the project tries to read or write a file that you haven't set permissions for, a dialog will pop up(you should have the helper app visible so you don't miss it) asking for you to set permissions.
-
-**Java is required** to run this helper app.
-
-How to use
----
-To use this helper app with the Scratch extension, simply download it using the link above, and double click it to run it. It will ask for you to choose a 'root' directory.
-
-The root directory is where the extension begins to access files at. For example, if you set the root directory to `/example/directory/`, then when the extension says `read file [example.txt]`, it will open and read the file  `/example/directory/example.txt`. Choose a directory that doesn't contain important files.
-
-The extension will set it's status to 'Ready' once it realizes the helper app is running.
-
-### Usage from command line
-The helper app can also be used from the command line, with or without making a new window.
-
-To run JAR files from the command line, use `java -jar path/to/.jar`
-
-On the command line, the helper app takes two arguments. They go after `path/to/.jar`
-* `path/to/root/dir/`: the root directory. **Required** unless the `-gui` option is also used, in which case it is *optional*.
-* `-gui`: **Not required**. If not used, the app runs in console mode. No extra window is created, and the app logs to the console. If the option is used, the app runs in the normal GUI mode, and it creates and logs to a window.
+See this project's pages [here](http://znapi.github.io/scratchx-file-io/) for more information and instructions to use it.
 
 Technical Details
 ---
