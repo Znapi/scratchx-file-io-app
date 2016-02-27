@@ -34,7 +34,7 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 	private JTextArea textArea;
 	private PlainDocument document;
 
-	private static final String usageMsg = "Usage:\n\tjava -jar simple-file-io-helper-app.jar [-gui] /root/directory\n\to  -gui is an optional argument. It causes the app to run with\n\t    a GUI rather in console mode.";
+	private static final String usageMsg = "Usage:\n\tjava -jar file-io-helper-app.jar [-gui] /root/directory\n\to  -gui is an optional argument. It causes the app to run with\n\t    a GUI rather in console mode.";
 
 	public static void main(String[] args) {
 		String rootDir = null;
@@ -46,7 +46,7 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 		if(System.console() != null) {
 			useGui = false;
 			if(args.length == 0) {
-				System.out.println("You must specify a root directory.\nExample:\n\tsimple-file-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
+				System.out.println("You must specify a root directory.\nExample:\n\tfile-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
 				return;
 			}
 		}
@@ -61,7 +61,7 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 		}
 
 		if(System.console() != null && rootDir == null) {
-			System.out.println("You must specify a root directory.\nExample:\n\tsimple-file-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
+			System.out.println("You must specify a root directory.\nExample:\n\tfile-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
 			return;
 		}
 
