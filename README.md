@@ -1,5 +1,5 @@
-# Simple File I/O Helper App for Scratch Extension
-This is a helper app to be used with the [File I/O Scratch Extension](https://github.com/Znapi/scratchx-file-io/).
+# Helper App for the File I/O Scatch extension
+This is a helper app to be used with the [File I/O Scratch extension](https://github.com/Znapi/scratchx-file-io/).
 
 See the project pages [here](http://znapi.github.io/scratchx-file-io/) for more information and instructions on how to use it.
 
