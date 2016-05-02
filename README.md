@@ -1,7 +1,7 @@
 # Helper App for the File I/O Scatch extension
 This is a helper app to be used with the [File I/O Scratch extension](https://github.com/Znapi/scratchx-file-io/).
 
-See the project pages [here](http://znapi.github.io/scratchx-file-io/) for more information and instructions on how to use it.
+See the project pages [here](https://znapi.github.io/scratchx-file-io/) for more information and instructions on how to use it.
 
 ---
 
@@ -9,4 +9,4 @@ The helper app is a simple HTTP server that binds to and listens on port 8080. T
 
 Credits
 ---
-Uses [NanoHTTPD](http://nanohttpd.com).
+Uses [NanoHTTPD](http://nanohttpd.org).
