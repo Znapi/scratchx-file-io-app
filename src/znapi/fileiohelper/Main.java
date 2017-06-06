@@ -18,8 +18,10 @@ package znapi.fileiohelper;
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridLayout;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -37,97 +39,133 @@ import javax.swing.text.PlainDocument;
 import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response.Status;
 
-public final class Main extends NanoHTTPD implements TableModelListener {
+public final class Main extends NanoHTTPD implements TableModelListener, ItemListener {
 
 	private String rootDir;
-	private boolean hasConsole;
+	private boolean useConsole;
 	private static final int port = 8080;
 
+	public boolean requirePermissions;
 	public Hashtable<String, Boolean> readPermissions;
 	public Hashtable<String, Boolean> writePermissions;
 
-	private PermissionsTableModel tableModel;
+	private PermissionsTableModel permissionsTableModel;
 
 	private JFrame frame;
-	private JTable table;
-	private JTextArea textArea;
-	private PlainDocument document;
+	private JCheckBox permissionsCheckBox;
+	private JTable permissionsTable;
+	private JTextArea consoleArea;
+	private PlainDocument console;
 
-	private static final String usageMsg = "Usage:\n\tjava -jar file-io-helper-app.jar [-gui] /root/directory\n\to  -gui is an optional argument. It causes the app to run with\n\t    a GUI rather in console mode.";
+	private static final String usageMsg = "Usage:\n\tjava -jar file-io-helper-app.jar [-gui] /root/directory\n\n\t  -gui         Optional argument. Runs the app in GUI mode.\n\t  -nosecurity  Only works with the -gui flag. Runs without\n\t               requiring permissions by default.";
 
 	public static void main(String[] args) {
 		String rootDir = null;
-		boolean useGui;
+		boolean useGui, useSecurity = true;
 
-		if(args.length > 2) {
-			System.out.println("Invalid arguments. There are too many.\n" + usageMsg);
-		}
-		if(System.console() != null) {
+		if(System.console() != null)
 			useGui = false;
-			if(args.length == 0) {
-				System.out.println("You must specify a root directory.\nExample:\n\tfile-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
-				return;
-			}
-		}
 		else
 			useGui = true;
 
 		for(String arg : args) {
-			if(arg.equalsIgnoreCase("-gui"))
-				useGui = true;
-			else
-				rootDir = arg;
+			switch(arg) {
+			case "-gui":
+				useGui = true; break;
+			case "-nosecurity":
+				useSecurity = false; break;
+			default:
+				if(arg.charAt(0) == '-') {
+					System.out.println("Unrecognized argument: " + arg);
+					System.out.println(usageMsg);
+					return;
+				}
+				else
+					rootDir = arg; break;
+			}
 		}
 
 		if(System.console() != null && rootDir == null) {
-			System.out.println("You must specify a root directory.\nExample:\n\tfile-io-helper-app /directory/you/want/as/root/\n"+usageMsg);
+			System.out.println("You must specify a root directory.\nExample:\n\tjava -jar file-io-helper-app.jar /directory/you/want/as/root/\n"+usageMsg);
 			return;
 		}
 
-		new Main(rootDir, !useGui);
+		new Main(rootDir, !useGui, useSecurity);
 	}
 
 	public void log(String s) {
-		if(hasConsole)
+		if(useConsole)
 			System.out.println(s);
 		else {
 			try {
-				document.insertString(document.getLength(), s + '\n', null);
+				console.insertString(console.getLength(), s + '\n', null);
 			} catch (BadLocationException e) {
 				e.printStackTrace();
 			}
 		}
 	}
 
-	public Main(String rootDir, boolean useConsole) {
+	public Main(String rootDir, boolean useConsole, boolean useSecurity) {
 		super(port);
-		this.hasConsole = useConsole;
+		this.useConsole = useConsole;
+		if(useConsole) this.requirePermissions = false;
+		else this.requirePermissions = useSecurity;
+
 		readPermissions = new Hashtable<String, Boolean>();
 		writePermissions = new Hashtable<String, Boolean>();
 
-		if(hasConsole)
+		if(useConsole)
 			this.rootDir = rootDir;
 		else {
 			frame = new JFrame("ScratchX File I/O Helper App");
 
 			// create space to write log messages to
-			document = new PlainDocument();
-			textArea = new JTextArea(document);
-			textArea.setFont(Font.decode(Font.MONOSPACED));
-			textArea.setEditable(false);
+			console = new PlainDocument();
+			consoleArea = new JTextArea(console);
+			consoleArea.setFont(Font.decode(Font.MONOSPACED));
+			consoleArea.setEditable(false);
+			JScrollPane consoleScrollPane = new JScrollPane(consoleArea);
 
 			// create table of file permissions
-			tableModel = new PermissionsTableModel();
-			tableModel.addTableModelListener(this);
-			table = new JTable(tableModel);
-			table.setFillsViewportHeight(true);
-			JScrollPane tableScrollPane = new JScrollPane(table);
+			permissionsCheckBox = new JCheckBox("Require permissions");
+			permissionsCheckBox.setSelected(useSecurity);
+			permissionsCheckBox.addItemListener(this);
+			permissionsTableModel = new PermissionsTableModel();
+			permissionsTableModel.addTableModelListener(this);
+			permissionsTable = new JTable(permissionsTableModel);
+			permissionsTable.setFillsViewportHeight(true);
+			JScrollPane permissionsScrollPane = new JScrollPane(permissionsTable);
+			permissionsScrollPane.setMinimumSize(new Dimension(0, 0));
+			permissionsTable.setMinimumSize(new Dimension(0, 0));
 
 			// put log space and table in panel
-			GridLayout grid = new GridLayout(2, 1);
-			JPanel panel = new JPanel(grid);
-			panel.add(tableScrollPane);
-			panel.add(textArea);
+			SpringLayout layout = new SpringLayout();
+			JPanel panel = new JPanel(layout);
+			JLabel permissionsLabel = new JLabel("Permissions table:");
+			JLabel consoleLabel = new JLabel("Console:");
+			panel.add(permissionsLabel);
+			panel.add(permissionsCheckBox);
+			panel.add(permissionsScrollPane);
+			panel.add(consoleLabel);
+			panel.add(consoleScrollPane);
+
+			layout.putConstraint(SpringLayout.NORTH, permissionsLabel, 2, SpringLayout.NORTH, panel);
+			layout.putConstraint(SpringLayout.WEST, permissionsLabel, 5, SpringLayout.WEST, panel);
+
+			layout.putConstraint(SpringLayout.NORTH, permissionsCheckBox, 0, SpringLayout.SOUTH, permissionsLabel);
+			layout.putConstraint(SpringLayout.WEST, permissionsCheckBox, 0, SpringLayout.WEST, panel);
+
+			layout.putConstraint(SpringLayout.NORTH, permissionsScrollPane, 5, SpringLayout.SOUTH, permissionsCheckBox);
+			layout.putConstraint(SpringLayout.WEST, permissionsScrollPane, 1, SpringLayout.WEST, panel);
+			layout.putConstraint(SpringLayout.EAST, permissionsScrollPane, -1, SpringLayout.EAST, panel);
+
+			layout.putConstraint(SpringLayout.NORTH, consoleLabel, 5, SpringLayout.SOUTH, permissionsScrollPane);
+			layout.putConstraint(SpringLayout.WEST, consoleLabel, 5, SpringLayout.WEST, panel);
+
+			layout.putConstraint(SpringLayout.NORTH, consoleScrollPane, 5, SpringLayout.SOUTH, consoleLabel);
+			layout.putConstraint(SpringLayout.WEST, consoleScrollPane, 1, SpringLayout.WEST, panel);
+			layout.putConstraint(SpringLayout.EAST, consoleScrollPane, -1, SpringLayout.EAST, panel);
+			layout.putConstraint(SpringLayout.SOUTH, consoleScrollPane, -1, SpringLayout.SOUTH, panel);
 
 			// make window/frame
 			frame.setContentPane(panel);
@@ -141,7 +179,7 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 				JFileChooser fileChooser = new JFileChooser();
 				fileChooser.setDialogTitle("Select a directory to use as root");
 				fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				
+
 				switch(fileChooser.showOpenDialog(frame)) {
 				case JFileChooser.APPROVE_OPTION:
 					this.rootDir = fileChooser.getSelectedFile().getAbsolutePath();
@@ -164,7 +202,7 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 			return;
 		}
 
-		if(hasConsole) {
+		if(useConsole) {
 			System.out.println("Server started. Hit Enter to stop.\n");
 
 			try {
@@ -180,30 +218,34 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 	}
 
 	public void checkRead(String dir) {
-		if(readPermissions.containsKey(dir)) {
-			if(!readPermissions.get(dir))
-				throw new SecurityException();
-		}
-		else {
-			boolean allow = PermissionDialog.askPermission(frame, dir, true);
-			readPermissions.put(dir, allow);
-			tableModel.addReadPermission(dir, allow);
-			if(!allow)
-				throw new SecurityException();
+		if(requirePermissions) {
+			if(readPermissions.containsKey(dir)) {
+				if(!readPermissions.get(dir))
+					throw new SecurityException();
+			}
+			else {
+				boolean allow = PermissionDialog.askPermission(frame, dir, true);
+				readPermissions.put(dir, allow);
+				permissionsTableModel.addReadPermission(dir, allow);
+				if(!allow)
+					throw new SecurityException();
+			}
 		}
 	}
 
 	public void checkWrite(String dir) {
-		if(writePermissions.containsKey(dir)) {
-			if(!writePermissions.get(dir))
-				throw new SecurityException();
-		}
-		else {
-			boolean allow = PermissionDialog.askPermission(frame, dir, false);
-			writePermissions.put(dir, allow);
-			tableModel.addWritePermission(dir, allow);
-			if(!allow)
-				throw new SecurityException();
+		if(requirePermissions) {
+			if(writePermissions.containsKey(dir)) {
+				if(!writePermissions.get(dir))
+					throw new SecurityException();
+			}
+			else {
+				boolean allow = PermissionDialog.askPermission(frame, dir, false);
+				writePermissions.put(dir, allow);
+				permissionsTableModel.addWritePermission(dir, allow);
+				if(!allow)
+					throw new SecurityException();
+			}
 		}
 	}
 
@@ -342,16 +384,21 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 		int r = e.getFirstRow();
 		boolean isReadPerm = e.getColumn() == 1;
 
-		String dir = (String)table.getValueAt(r, 0);
+		String dir = (String)permissionsTable.getValueAt(r, 0);
 		boolean newValue;
 		if(isReadPerm) {
-			newValue = (boolean)table.getValueAt(r, 1);
+			newValue = (boolean)permissionsTable.getValueAt(r, 1);
 			readPermissions.replace(dir, newValue);
 		}
 		else {
-			newValue = (boolean)table.getValueAt(r, 2);
+			newValue = (boolean)permissionsTable.getValueAt(r, 2);
 			writePermissions.replace(dir, newValue);
 		}
+	}
+
+	public void itemStateChanged(ItemEvent e) {
+		// don't bother checking the source of the event, since it can only be from the permissionsCheckBox
+		this.requirePermissions = (e.getStateChange() == ItemEvent.SELECTED);
 	}
 
 }
