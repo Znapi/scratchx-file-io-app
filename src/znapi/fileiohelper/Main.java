@@ -23,6 +23,7 @@ import java.awt.GridLayout;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Hashtable;
@@ -225,12 +226,19 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 		}
 	}
 
-	public Status writeFile(File f, String dir, String contents) {
+	public Status writeFile(File f, String dir, String contents, boolean isAppend) {
 		log("Writing file: " + f.getName());
 		try {
 			checkWrite(dir);
-			PrintWriter writer = new PrintWriter(f);
-			writer.print(contents);
+			PrintWriter writer;
+			if(!isAppend) {
+				writer = new PrintWriter(f);
+				writer.print(contents);
+			}
+			else {
+				writer = new PrintWriter(new FileOutputStream(f, true));
+				writer.println(contents);
+			}
 			writer.close();
 			return Status.OK;
 		} catch (SecurityException e) {
@@ -248,6 +256,7 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 		r.addHeader("Access-Control-Allow-Origin", "*");
 		r.addHeader("Access-Control-Expose-Headers", "X-Is-ScratchX-File-IO-Helper-App");
 		r.addHeader("X-Is-ScratchX-File-IO-Helper-App", "yes");
+		r.addHeader("Access-Control-Allow-Headers", "X-Action");
 
 		File f;
 		String uri = session.getUri();
@@ -286,24 +295,30 @@ public final class Main extends NanoHTTPD implements TableModelListener {
 			log("POST " + uri);
 			f = new File(rootDir+uri);
 			if(f.exists())
-				r.setStatus(writeFile(f, uri, ""));
+				r.setStatus(writeFile(f, uri, "", false));
 			else
 				r.setStatus(createFile(f, uri));
 			break;
 
 		// set contents of file
 		case PUT:
-			log("PUT " + session.getUri());
+			boolean isAppend = "append".equalsIgnoreCase(session.getHeaders().get("X-Action".toLowerCase()));
+			if(isAppend)
+				log("PUT append " + session.getUri());
+			else 
+				log("PUT " + session.getUri());
+
 			f = new File(rootDir+session.getUri());
 			if(!f.exists()) {
 				r.setStatus(createFile(f, uri));
 				if(r.getStatus() != Status.OK) break;
 			}
+
 			int contentLength = Integer.parseInt(session.getHeaders().get("content-length"));
 			byte[] buffer = new byte[contentLength];
 			try {
 				session.getInputStream().read(buffer, 0, contentLength);
-				r.setStatus(writeFile(f, uri, new String(buffer)));
+				r.setStatus(writeFile(f, uri, new String(buffer), isAppend));
 			} catch (IOException e) {
 				log("I/O error");
 				r.setStatus(Status.INTERNAL_ERROR);
